@@ -23,7 +23,9 @@
     "@langchain/textsplitters": "^1.0.1",
     "@tavily/core": "^0.6.4",
     "@twilio/voice-sdk": "^2.18.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
     "axios": "^1.13.5",
     "bottleneck": "^2.19.5",
     "cors": "^2.8.5",
@@ -37,7 +39,6 @@
     "openai": "^6.22.0",
     "tsx": "^4.21.0",
     "twilio": "^5.11.2",
-    "typescript": "^5.9.3",
-    "@types/cors": "^2.8.19"
+    "typescript": "^5.9.3"
   }
 }
