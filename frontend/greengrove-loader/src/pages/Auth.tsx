@@ -138,6 +138,15 @@ const Auth = () => {
 
         {/* Glassmorphism Card */}
         <div className="rounded-2xl border border-accent/20 bg-card/10 backdrop-blur-xl p-8 shadow-2xl shadow-black/20">
+          {isLogin && (
+            <div className="mb-6 p-4 rounded-xl bg-accent/10 border border-accent/20 text-center backdrop-blur-sm">
+              <p className="text-sm font-semibold text-accent mb-2">Recruiter Sample Credentials</p>
+              <div className="flex justify-center gap-6 text-sm text-primary-foreground/90">
+                <span><strong>Phone:</strong> 12345</span>
+                <span><strong>Code:</strong> 12345</span>
+              </div>
+            </div>
+          )}
           <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-5">
             {/* Registration-only fields */}
             {!isLogin && (

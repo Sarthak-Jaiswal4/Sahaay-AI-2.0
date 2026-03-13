@@ -18,7 +18,7 @@ const UserSchema: Schema<IUser> = new Schema({
     language_preference: { type: String, default: "hi" },
     phone_number: { type: String, required: true },
     disability_is: { type: Boolean, required: true },
-    disability_type: { type: String, enum: ["Visual Impairment", "Hearing Impairment", "Speech Disability", "Other"], required: true },
+    disability_type: { type: String, enum: ["Visual Impairment", "Hearing Impairment", "Speech Disability", "other"], required: true },
     answer_preference: { type: String, enum: ["voice", "chat"], required: true },
 });
 

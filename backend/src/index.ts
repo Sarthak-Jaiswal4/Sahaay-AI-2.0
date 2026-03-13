@@ -772,4 +772,16 @@ export async function downloadWhatsAppMedia(mediaId: string): Promise<string> {
     }
 }
 
-app.listen(3000, () => console.log("express running on 3000"))
+app.listen(3000, () => {
+    console.log("express running on 3000");
+
+    // Route self-ping every 5 minutes to keep it healthy/active
+    setInterval(async () => {
+        try {
+            const res = await axios.get(process.env.HOST_URL || "http://localhost:3000/");
+            console.log(`[Health Ping] Status: ${res.data}`);
+        } catch (error: any) {
+            console.error(`[Health Ping Error] Failed to ping health route: ${error.message}`);
+        }
+    }, 5 * 60 * 1000);
+});
