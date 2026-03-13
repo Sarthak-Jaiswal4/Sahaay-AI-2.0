@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -36,10 +36,16 @@ export const authApi = {
         const response = await api.post("/farmer-info", data);
         return response.data;
     },
-    getWeather: async (userId: string) => {
-        const response = await api.get(`/weather/${userId}`);
-        return response.data;
-    },
+getWeather: async (userId: string, location?: { lat: number; lon: number }) => {
+    const response = await api.get(`/weather/${userId}`, {
+        params: location   // ✅ sent as query parameters
+    });
+    return response.data;
+},
+    makeCall: async (userId: string, query: string) => {
+        const response = await api.post("/", { userId, query });
+        return response.data; 
+    }
 };
 
 export default api;

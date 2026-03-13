@@ -244,13 +244,14 @@ app.post('/farmer-info', async (req: Request, res: Response) => {
 app.get('/weather/:userId', async (req: Request, res: Response) => {
     try {
         const { userId } = req.params;
+        const { lat, lon } = req.query;
+
         const farmerInfo = await FarmerProfile.findOne({ userId });
-        const location = farmerInfo?.location || "Raipur, Chhattisgarh";
+        const storedLocation = farmerInfo?.location || "Raipur, Chhattisgarh";
 
         const apiKey = process.env.OPENWEATHER_API_KEY;
 
         if (!apiKey) {
-            // High-quality mock data when API key is missing
             return res.status(200).json({
                 type: "Sunny",
                 temp: 32,
@@ -259,47 +260,77 @@ app.get('/weather/:userId', async (req: Request, res: Response) => {
                 wind: 12,
                 pressure: 1012,
                 visibility: 10,
-                location,
+                location: storedLocation,
                 isDemo: true
             });
         }
-        console.log("Weather API:", location, farmerInfo);
-        const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`);
+
+        let weatherResponse;
+        console.log("Weather API:", lat, lon, farmerInfo);
+        // ✅ PRIORITY → Coordinates (Most Accurate)
+        if (lat && lon) {
+            weatherResponse = await axios.get(
+                `https://api.openweathermap.org/data/2.5/weather`,
+                {
+                    params: {
+                        lat,
+                        lon,
+                        appid: apiKey,
+                        units: "metric"
+                    }
+                }
+            );
+        } else {
+            // ✅ FALLBACK → City Name
+            weatherResponse = await axios.get(
+                `https://api.openweathermap.org/data/2.5/weather`,
+                {
+                    params: {
+                        q: storedLocation,
+                        appid: apiKey,
+                        units: "metric"
+                    }
+                }
+            );
+        }
+
         const data = weatherResponse.data;
 
-        // Map OpenWeatherMap condition to Dashboard WeatherType
+        // ✅ Condition Mapping
         let weatherType = "Sunny";
         const condition = data.weather[0].main;
+
         if (condition === "Clouds") weatherType = "Cloudy";
         if (condition === "Rain" || condition === "Drizzle") weatherType = "Rainy";
         if (condition === "Thunderstorm") weatherType = "Stormy";
+
+        console.log("Weather Data:", {
+            "type": weatherType,
+            "temp": Math.round(data.main.temp),
+            "feels_like": Math.round(data.main.feels_like),
+            "humidity": data.main.humidity,
+            "wind": Math.round(data.wind.speed * 3.6),
+            "pressure": data.main.pressure,
+            "visibility": data.visibility / 1000,
+            "location": data.name,
+            "isDemo": false
+        });
 
         res.status(200).json({
             type: weatherType,
             temp: Math.round(data.main.temp),
             feels_like: Math.round(data.main.feels_like),
             humidity: data.main.humidity,
-            wind: Math.round(data.wind.speed * 3.6), // conversion from m/s to km/h
+            wind: Math.round(data.wind.speed * 3.6),
             pressure: data.main.pressure,
-            visibility: data.visibility / 1000, // meters to km
+            visibility: data.visibility / 1000,
             location: data.name,
             isDemo: false
         });
-    } catch (error) {
-        console.log("Error in weather fetch", error);
-        // Fallback to mock on API error to keep UI functional
-        return res.status(200).json({
-            type: "Cloudy",
-            temp: 28,
-            feels_like: 30,
-            humidity: 60,
-            wind: 8,
-            pressure: 1010,
-            visibility: 8,
-            location: "Local Area",
-            isDemo: true,
-            error: "API Error"
-        });
+
+    } catch (error: any) {
+        console.error("❌ Weather Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Weather fetch failed" });
     }
 });
 
@@ -309,11 +340,14 @@ app.get("/", (req, res) => {
 
 app.post('/', async (req: Request, res: Response) => {
     try {
-        const { query, userId } = req.body
+        let { query, userId } = req.body
         console.log("query", query)
         console.log("userId", userId)
-        if (!query || !userId) {
+        if (!userId) {
             return res.status(404).json({ "message": "no query found" })
+        }
+        if (query == "") {
+            query = "Hello how are you";
         }
         let call: any;
         try {
@@ -543,19 +577,75 @@ app.post('/webhook', async (req, res) => {
             }
         }
 
+        const tools: OpenAI.Chat.ChatCompletionTool[] = [
+        {
+            type: "function",
+            function: {
+                name: "query_knowledge_graph",
+                description:
+                    "Query the knowledge graph to get relevant facts, relationships, or context about a topic before answering.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                    query: {
+                        type: "string",
+                        description: "The search query to look up in the knowledge graph",
+                    },
+                    },
+                    required: ["query"],
+                },
+            },
+        },
+        ];
+
         session.history.push({ role: 'user', content: messageContent });
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o", // Using 4o for better performance/speed
+            model: "gpt-4o",
             messages: session.history,
-            max_tokens: 500 // Increased for more detailed analysis
+            max_tokens: 500, 
+            tool_choice: "auto",
+            tools: tools   
         });
 
-        const aiResponse = completion.choices[0].message.content || "माफ़ कीजिए, मैं अभी जवाब नहीं दे पा रहा हूँ।";
+        const responseMessage = completion.choices[0].message;
 
-        session.history.push({ role: 'assistant', content: aiResponse });
+        let aiResponse = "";
+        if (responseMessage.tool_calls) {
+            session.history.push(responseMessage);
 
-        // Send AI reply followed by interactive buttons
+            for (const toolCall of responseMessage.tool_calls) {
+                if (toolCall.type !== "function") continue;
+                if (toolCall.function?.name === "query_knowledge_graph") {
+                const args = JSON.parse(toolCall.function.arguments);
+                
+                const Result = await axios.post("http://localhost:4000/query", {
+                    query: args.query
+                });
+
+                session.history.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(Result.data.answer)
+                });
+                }
+            }
+
+            const finalCompletion = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: session.history,
+                max_tokens: 500
+            });
+
+            aiResponse = finalCompletion.choices[0].message.content 
+                || "माफ़ कीजिए, मैं अभी जवाब नहीं दे पा रहा हूँ।";
+            
+            session.history.push({ role: 'assistant', content: aiResponse });
+        }else{
+            aiResponse = responseMessage.content!
+            session.history.push({ role: 'assistant', content: aiResponse });
+        }
+
         await sendWhatsAppMessage(from, aiResponse);
 
         await sendWhatsAppInteractive(from, "आप आगे क्या करना चाहेंगे? (What would you like to do next?)", [
@@ -571,7 +661,7 @@ app.post('/webhook', async (req, res) => {
 })
 
 //@ts-ignore
-const WHATSAPP_TOKEN = "EAAYRszYGgX8BQ88yI0ZANGnSIgcL6fTVTX3LLlqkbXaXt0Sb9jbiSX5ruimZBJ2PNGH3r1pRWBIsylAXzPZC9ocgKCQUpKCZAfnRZCq4tb5Xy5FaNtfxpaF6Xe4wdZAEQ4vHLuWylj7jlFnABoAhMn1d7AMBaqiW4V8QrAQowYIDk7CSZBLMxZCCQl6QRVqGB6k0wTcZC4EMPegJq9T4sZBFe0O6l5ZAUyVMSOxm0ZC8081KFUbzNn5nat7ACJGZALpJ2TXYvLIYe9hhVoVXIUiGoDEYCIUk29wZDZD" || process.env.WHATSAPP_TOKEN;
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 
 export async function sendWhatsAppMessage(to: string, message: string) {
     try {

@@ -53,6 +53,25 @@ const Dashboard = () => {
   const [farmerProfile, setFarmerProfile] = useState<any>(null);
   const userId = localStorage.getItem("userId") || "";
 
+const getLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation not supported"));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+      },
+      (err) => reject(err)
+    );
+  });
+};
+
   useEffect(() => {
     const checkProfile = async () => {
       if (!userId) {
@@ -67,8 +86,9 @@ const Dashboard = () => {
           setFarmerProfile(response.farmerInfo);
         }
 
+        const { lat, lon } = await getLocation();
         // Fetch weather data
-        const weather = await authApi.getWeather(userId);
+        const weather = await authApi.getWeather(userId, { lat, lon });
         setCurrentWeather({
           type: weather.type,
           temp: weather.temp,
@@ -76,7 +96,11 @@ const Dashboard = () => {
           humidity: weather.humidity,
           wind: weather.wind,
           pressure: weather.pressure,
-          visibility: weather.visibility
+          visibility: weather.visibility,
+           location: {
+        lat,
+        lon
+      }
         });
 
         if (weather.isDemo) {
@@ -117,6 +141,13 @@ const Dashboard = () => {
     damping: 25,
     stiffness: 120,
     mass: 1,
+  };
+
+  const handleCallRequest = async () => {
+    if (!userId) return;
+      console.log("Initiating call request...");
+      await authApi.makeCall(userId, "");
+      alert("Call initiated! You will receive a call shortly.");
   };
 
   return (
@@ -390,9 +421,8 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Support Options */}
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-6 rounded-xl border border-border bg-card/40 flex items-center justify-between hover:border-accent/40 transition-colors cursor-pointer group">
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4 ">
+            <div onClick={handleCallRequest} className="p-6 rounded-xl border border-border bg-card/40 flex items-center justify-between hover:border-accent/40 transition-colors cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent">
                   <Phone size={20} />

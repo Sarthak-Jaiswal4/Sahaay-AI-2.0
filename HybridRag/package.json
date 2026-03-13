@@ -1,0 +1,29 @@
+{
+  "name": "hybridrag",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/genai": "^1.45.0",
+    "@langchain/cohere": "^1.0.4",
+    "@langchain/community": "^1.1.23",
+    "@langchain/core": "^1.1.32",
+    "@langchain/google-genai": "^2.1.25",
+    "@langchain/textsplitters": "^1.0.1",
+    "axios": "^1.13.6",
+    "bottleneck": "^2.19.5",
+    "compute-cosine-similarity": "^1.1.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "langchain": "^1.2.32",
+    "mongodb": "^7.1.0"
+  }
+}
