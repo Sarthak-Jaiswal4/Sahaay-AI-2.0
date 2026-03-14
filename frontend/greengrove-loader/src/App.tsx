@@ -10,7 +10,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { AccessibilityToolbar } from "@/components/Acessibility";
 import { LanguageProvider } from "./context/LanguageContext";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 const queryClient = new QueryClient();
 
