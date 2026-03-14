@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { AccessibilityToolbar } from "@/components/Acessibility";
 import { LanguageProvider } from "./context/LanguageContext";
+import { Analytics } from "@vercel/analytics/next"
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
       <TooltipProvider>
         <BrowserRouter>
           <AccessibilityToolbar />
+          <Analytics />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
