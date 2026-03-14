@@ -1,3 +1,4 @@
+## Link - https://sahaay-ai-2-0.vercel.app/
 # 🌾 Sahaay AI – Multimodal RAG-Powered AI Farming Assistant
 
 A multilingual, multimodal AI Agent for farmers that combines Hybrid RAG, GraphRAG, voice interaction, real-time market prices, and live web intelligence to deliver accurate, personalized agricultural guidance.
